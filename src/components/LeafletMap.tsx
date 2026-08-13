@@ -1232,6 +1232,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               className="bg-slate-950/80 border border-white/10 text-slate-200 text-[10.5px] rounded-xl px-2 py-1 focus:outline-none focus:border-indigo-400 font-medium cursor-pointer"
             >
               <option value="ALL">Semua Provinsi</option>
+              <option value="DKI Jakarta">DKI Jakarta</option>
+              <option value="Banten">Banten (Bintaro)</option>
               <option value="Jawa Barat">Jawa Barat</option>
               <option value="Sumatera Selatan">Sumatera Selatan</option>
               <option value="Kalimantan Tengah">Kalimantan Tengah</option>
