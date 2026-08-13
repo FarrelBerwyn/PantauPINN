@@ -249,8 +249,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [-2.5, 118.0],
-        zoom: 5,
+        center: [-6.2731, 106.7500],
+        zoom: 11,
         zoomControl: false
       });
 
@@ -1208,7 +1208,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       )}
 
       {/* Top Floating Control Bar (Filters & Search) */}
-      <div className={`absolute ${isRegularUser ? (isMobileCardCollapsed ? 'top-4 left-4' : 'top-[16.5rem] sm:top-4 left-4 sm:left-[21rem] md:left-[22.5rem]') : 'top-20 left-4'} right-4 z-10 flex items-center justify-between pointer-events-none transition-all duration-300 max-w-full overflow-hidden`}>
+      <div className={`absolute ${isRegularUser ? (isMobileCardCollapsed ? 'top-4 left-4 sm:left-[16.5rem]' : 'top-[16.5rem] sm:top-4 left-4 sm:left-[21rem] md:left-[22.5rem]') : 'top-20 left-4'} right-4 z-10 flex items-center justify-between pointer-events-none transition-all duration-300 max-w-full overflow-hidden`}>
         {/* Search & Filters in 1 Single Horizontal Row */}
         <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 p-1.5 rounded-2xl shadow-2xl overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
           {/* Search Box */}
