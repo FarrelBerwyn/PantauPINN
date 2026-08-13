@@ -272,6 +272,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         const clickedLat = parseFloat(e.latlng.lat.toFixed(6));
         const clickedLng = parseFloat(e.latlng.lng.toFixed(6));
 
+        // Pan map smoothly to the clicked location
+        map.panTo([clickedLat, clickedLng], { animate: true, duration: 0.8 });
+
         // Find nearest road segment
         let nearestSeg = roadSegments[0];
         let minDistance = Infinity;
@@ -919,12 +922,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       });
     }
 
-    // Render Selected Location Pin Marker when mapSelectedPoint is active
+    // Render Selected Location Pin Marker & Anchored Popup Card directly above pin
     if (mapSelectedPoint) {
       const selectedPinHtml = `
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; filter: drop-shadow(0 4px 14px rgba(16, 185, 129, 0.9));">
-          <div class="pci-pulse-wave" style="width: 42px; height: 42px; border: 2.5px solid #10b981; background-color: rgba(16, 185, 129, 0.3); --pulse-duration: 1.2s;"></div>
-          <div style="position: relative; z-index: 10; background-color: #10b981; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; border: 2.5px solid white; box-shadow: 0 0 16px rgba(16, 185, 129, 0.9);">
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.9));">
+          <div class="pci-pulse-wave" style="width: 36px; height: 36px; border: 2px solid #10b981; background-color: rgba(16, 185, 129, 0.35); --pulse-duration: 1.2s;"></div>
+          <div style="position: relative; z-index: 10; background-color: #10b981; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; border: 2px solid white; box-shadow: 0 0 14px rgba(16, 185, 129, 0.9);">
             📍
           </div>
         </div>
@@ -933,11 +936,69 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       const selectedPinIcon = L.divIcon({
         html: selectedPinHtml,
         className: 'selected-location-pin-marker',
-        iconSize: [42, 42],
-        iconAnchor: [21, 21]
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
       });
 
-      L.marker(mapSelectedPoint.coordinates, { icon: selectedPinIcon }).addTo(layerGroup);
+      const selectedMarker = L.marker(mapSelectedPoint.coordinates, { icon: selectedPinIcon }).addTo(layerGroup);
+
+      // Compact DOM popup anchored directly above pin
+      const popupContainer = document.createElement('div');
+      popupContainer.style.width = '210px';
+      popupContainer.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+      popupContainer.style.padding = '2px';
+
+      popupContainer.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 5px;">
+          <span style="font-size: 10.5px; font-weight: 900; color: #059669;">📍 LOKASI TERPILIH</span>
+          <button id="pop-close-btn" style="background: none; border: none; font-size: 12px; color: #94a3b8; cursor: pointer; font-weight: 700; padding: 0 2px;">✕</button>
+        </div>
+        <div style="font-size: 9.5px; font-family: monospace; color: #0284c7; background: #f0f9ff; padding: 2px 5px; border-radius: 5px; font-weight: 700; margin-bottom: 5px; border: 1px solid #bae6fd; text-align: center;">
+          ${mapSelectedPoint.coordinates[0]}, ${mapSelectedPoint.coordinates[1]}
+        </div>
+        <div style="font-size: 9px; color: #334155; text-align: left; background: #f8fafc; padding: 4px 6px; border-radius: 6px; margin-bottom: 7px; border: 1px solid #e2e8f0;">
+          <span style="color: #64748b; font-size: 8px; font-weight: 700; display: block;">RUAS JALAN TERDEKAT:</span>
+          <strong style="color: #0f172a; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9.5px;">${mapSelectedPoint.nearestSegment.name}</strong>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          <button id="pop-approve-btn" style="flex: 1; background-color: #10b981; color: white; border: none; padding: 5px 8px; border-radius: 6px; font-weight: 800; font-size: 9.5px; cursor: pointer; box-shadow: 0 2px 5px rgba(16,185,129,0.3); display: flex; align-items: center; justify-content: center; gap: 3px;">
+            ✓ Setujui Lokasi
+          </button>
+          <button id="pop-cancel-btn" style="background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 5px 7px; border-radius: 6px; font-weight: 700; font-size: 9.5px; cursor: pointer;">
+            ✕
+          </button>
+        </div>
+      `;
+
+      selectedMarker.bindPopup(popupContainer, {
+        offset: [0, -12],
+        closeButton: false,
+        className: 'compact-location-approval-popup'
+      }).openPopup();
+
+      setTimeout(() => {
+        const approveBtn = popupContainer.querySelector('#pop-approve-btn') as HTMLButtonElement | null;
+        const cancelBtn = popupContainer.querySelector('#pop-cancel-btn') as HTMLButtonElement | null;
+        const closeBtn = popupContainer.querySelector('#pop-close-btn') as HTMLButtonElement | null;
+
+        if (approveBtn) {
+          approveBtn.onclick = (evt) => {
+            evt.stopPropagation();
+            setCustomCoordinates(mapSelectedPoint.coordinates);
+            setFormSegmentId(mapSelectedPoint.nearestSegment.id);
+            setMapSelectedPoint(null);
+            setIsReportFormOpen(true);
+          };
+        }
+
+        const handleCancel = (evt: MouseEvent) => {
+          evt.stopPropagation();
+          setMapSelectedPoint(null);
+        };
+
+        if (cancelBtn) cancelBtn.onclick = handleCancel;
+        if (closeBtn) closeBtn.onclick = handleCancel;
+      }, 50);
     }
   }, [filteredSegments, filteredWimStations, communityReports, selectedSegment, showWimOnly, showCommunityReports, mapSelectedPoint]);
 
@@ -959,61 +1020,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       <div className="absolute inset-0 w-full h-full z-0">
         <div ref={mapContainerRef} className="w-full h-full" />
       </div>
-
-      {/* Floating Location Selection Approval Overlay Card */}
-      {mapSelectedPoint && (
-        <div className="absolute top-16 sm:top-20 left-4 right-4 z-30 max-w-md mx-auto bg-slate-900/95 border-2 border-emerald-400 backdrop-blur-2xl p-3.5 sm:p-4 rounded-2xl shadow-2xl space-y-2.5 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto">
-          <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2">
-            <div className="flex items-center space-x-2">
-              <div className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shrink-0">
-                <MapPin className="w-5 h-5 text-emerald-400 animate-bounce" />
-              </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-extrabold text-white">
-                  📍 Lokasi Titik Peta Terpilih
-                </h4>
-                <p className="text-[10px] text-slate-300 font-mono">
-                  {mapSelectedPoint.coordinates[0]}, {mapSelectedPoint.coordinates[1]}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setMapSelectedPoint(null)}
-              className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="bg-slate-950/80 p-2.5 rounded-xl border border-white/10 text-[10.5px]">
-            <span className="text-slate-400 block font-mono text-[9.5px]">Ruas Jalan Terdekat:</span>
-            <span className="text-cyan-300 font-extrabold text-xs block truncate mt-0.5">
-              {mapSelectedPoint.nearestSegment.name} ({mapSelectedPoint.nearestSegment.province})
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-2 pt-1">
-            <button
-              onClick={() => {
-                setCustomCoordinates(mapSelectedPoint.coordinates);
-                setFormSegmentId(mapSelectedPoint.nearestSegment.id);
-                setMapSelectedPoint(null);
-                setIsReportFormOpen(true);
-              }}
-              className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center space-x-1.5 shadow-lg shadow-emerald-600/30 border border-white/20 transition-all cursor-pointer"
-            >
-              <CheckCircle className="w-4 h-4 text-white" />
-              <span>✓ Setujui & Buat Laporan</span>
-            </button>
-            <button
-              onClick={() => setMapSelectedPoint(null)}
-              className="py-2 px-3 rounded-xl bg-rose-600/30 hover:bg-rose-600 text-rose-200 hover:text-white font-extrabold text-xs border border-rose-500/40 transition-all cursor-pointer"
-            >
-              ✕ Batal
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Role Context Lens Header Bar (Floating Top) - ONLY for Official Roles */}
       {!isRegularUser && (
