@@ -19,7 +19,8 @@ import {
   ThumbsUp,
   X,
   Info,
-  ChevronDown
+  ChevronDown,
+  CheckCircle
 } from 'lucide-react';
 
 interface LeafletMapProps {
@@ -234,6 +235,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     ? Math.round(roadSegments.reduce((sum, s) => sum + (s.currentPci || 0), 0) / roadSegments.length)
     : 0;
 
+  // Map Click Location Selection State
+  const [mapSelectedPoint, setMapSelectedPoint] = useState<{
+    coordinates: [number, number];
+    nearestSegment: RoadSegment;
+  } | null>(null);
+
   const tempMarkerRef = useRef<L.Marker | null>(null);
 
   // Initialize Map
@@ -260,125 +267,27 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         }
       ).addTo(map);
 
-      // Map click event listener: Drop interactive location pin with approve checkmark button
+      // Map click event listener: Select point and set mapSelectedPoint
       map.on('click', (e: L.LeafletMouseEvent) => {
         const clickedLat = parseFloat(e.latlng.lat.toFixed(6));
         const clickedLng = parseFloat(e.latlng.lng.toFixed(6));
 
-        // Remove previous temporary selection marker if exists
-        if (tempMarkerRef.current && mapInstanceRef.current) {
-          mapInstanceRef.current.removeLayer(tempMarkerRef.current);
-          tempMarkerRef.current = null;
-        }
-
-        // Custom Pin Icon with Checkmark
-        const tempIconHtml = `
-          <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.8)); animate: bounce 1s infinite;">
-            <div style="background-color: #10b981; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; border: 2.5px solid white; box-shadow: 0 0 15px rgba(16, 185, 129, 0.9);">
-              📍
-            </div>
-          </div>
-        `;
-
-        const tempIcon = L.divIcon({
-          html: tempIconHtml,
-          className: 'temp-location-pin-marker',
-          iconSize: [36, 36],
-          iconAnchor: [18, 18]
+        // Find nearest road segment
+        let nearestSeg = roadSegments[0];
+        let minDistance = Infinity;
+        roadSegments.forEach((seg) => {
+          const segLat = seg.coordinates[0];
+          const segLng = seg.coordinates[1];
+          const dist = Math.hypot(segLat - clickedLat, segLng - clickedLng);
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestSeg = seg;
+          }
         });
 
-        const tempMarker = L.marker([clickedLat, clickedLng], { icon: tempIcon }).addTo(map);
-        tempMarkerRef.current = tempMarker;
-
-        const popupContent = `
-          <div style="font-family: system-ui, -apple-system, sans-serif; padding: 6px; width: 220px; text-align: center; color: #0f172a;">
-            <div style="font-size: 11px; font-weight: 800; color: #059669; margin-bottom: 2px; text-transform: uppercase;">
-              📍 LOKASI TITIK PETA TERPILIH
-            </div>
-            <div style="font-size: 10px; font-family: monospace; color: #475569; margin-bottom: 8px; background-color: #f1f5f9; padding: 3px 6px; border-radius: 6px; font-weight: 700;">
-              ${clickedLat}, ${clickedLng}
-            </div>
-            <p style="font-size: 10px; color: #334155; margin: 0 0 8px 0;">
-              Klik <strong>Setujui Lokasi</strong> untuk menambahkan laporan baru di titik ini.
-            </p>
-            <div style="display: flex; gap: 6px; justify-content: center;">
-              <button id="btn-approve-location-${clickedLat}-${clickedLng}" style="
-                flex: 1;
-                background-color: #10b981;
-                color: white;
-                border: none;
-                padding: 6px 10px;
-                border-radius: 8px;
-                font-weight: 800;
-                font-size: 11px;
-                cursor: pointer;
-                box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 4px;
-              ">
-                ✓ Setujui Lokasi
-              </button>
-              <button id="btn-cancel-location-${clickedLat}-${clickedLng}" style="
-                background-color: #ef4444;
-                color: white;
-                border: none;
-                padding: 6px 10px;
-                border-radius: 8px;
-                font-weight: 700;
-                font-size: 11px;
-                cursor: pointer;
-              ">
-                ✕
-              </button>
-            </div>
-          </div>
-        `;
-
-        tempMarker.bindPopup(popupContent).openPopup();
-
-        // Attach DOM click listeners once popup opens
-        tempMarker.on('popupopen', () => {
-          setTimeout(() => {
-            const approveBtn = document.getElementById(`btn-approve-location-${clickedLat}-${clickedLng}`);
-            const cancelBtn = document.getElementById(`btn-cancel-location-${clickedLat}-${clickedLng}`);
-
-            if (approveBtn) {
-              approveBtn.onclick = () => {
-                // Find nearest road segment
-                let nearestSegId = roadSegments[0]?.id || 'SEG-001';
-                let minDistance = Infinity;
-                roadSegments.forEach((seg) => {
-                  const segLat = seg.coordinates[0];
-                  const segLng = seg.coordinates[1];
-                  const dist = Math.hypot(segLat - clickedLat, segLng - clickedLng);
-                  if (dist < minDistance) {
-                    minDistance = dist;
-                    nearestSegId = seg.id;
-                  }
-                });
-
-                if (tempMarkerRef.current && mapInstanceRef.current) {
-                  mapInstanceRef.current.removeLayer(tempMarkerRef.current);
-                  tempMarkerRef.current = null;
-                }
-
-                setCustomCoordinates([clickedLat, clickedLng]);
-                setFormSegmentId(nearestSegId);
-                setIsReportFormOpen(true);
-              };
-            }
-
-            if (cancelBtn) {
-              cancelBtn.onclick = () => {
-                if (tempMarkerRef.current && mapInstanceRef.current) {
-                  mapInstanceRef.current.removeLayer(tempMarkerRef.current);
-                  tempMarkerRef.current = null;
-                }
-              };
-            }
-          }, 50);
+        setMapSelectedPoint({
+          coordinates: [clickedLat, clickedLng],
+          nearestSegment: nearestSeg
         });
       });
 
@@ -1009,7 +918,28 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         reportMarker.bindPopup(reportPopupContent);
       });
     }
-  }, [filteredSegments, filteredWimStations, communityReports, selectedSegment, showWimOnly, showCommunityReports]);
+
+    // Render Selected Location Pin Marker when mapSelectedPoint is active
+    if (mapSelectedPoint) {
+      const selectedPinHtml = `
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; filter: drop-shadow(0 4px 14px rgba(16, 185, 129, 0.9));">
+          <div class="pci-pulse-wave" style="width: 42px; height: 42px; border: 2.5px solid #10b981; background-color: rgba(16, 185, 129, 0.3); --pulse-duration: 1.2s;"></div>
+          <div style="position: relative; z-index: 10; background-color: #10b981; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; border: 2.5px solid white; box-shadow: 0 0 16px rgba(16, 185, 129, 0.9);">
+            📍
+          </div>
+        </div>
+      `;
+
+      const selectedPinIcon = L.divIcon({
+        html: selectedPinHtml,
+        className: 'selected-location-pin-marker',
+        iconSize: [42, 42],
+        iconAnchor: [21, 21]
+      });
+
+      L.marker(mapSelectedPoint.coordinates, { icon: selectedPinIcon }).addTo(layerGroup);
+    }
+  }, [filteredSegments, filteredWimStations, communityReports, selectedSegment, showWimOnly, showCommunityReports, mapSelectedPoint]);
 
   // Center on selected segment
   useEffect(() => {
@@ -1029,6 +959,61 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       <div className="absolute inset-0 w-full h-full z-0">
         <div ref={mapContainerRef} className="w-full h-full" />
       </div>
+
+      {/* Floating Location Selection Approval Overlay Card */}
+      {mapSelectedPoint && (
+        <div className="absolute top-16 sm:top-20 left-4 right-4 z-30 max-w-md mx-auto bg-slate-900/95 border-2 border-emerald-400 backdrop-blur-2xl p-3.5 sm:p-4 rounded-2xl shadow-2xl space-y-2.5 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto">
+          <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shrink-0">
+                <MapPin className="w-5 h-5 text-emerald-400 animate-bounce" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-extrabold text-white">
+                  📍 Lokasi Titik Peta Terpilih
+                </h4>
+                <p className="text-[10px] text-slate-300 font-mono">
+                  {mapSelectedPoint.coordinates[0]}, {mapSelectedPoint.coordinates[1]}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMapSelectedPoint(null)}
+              className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="bg-slate-950/80 p-2.5 rounded-xl border border-white/10 text-[10.5px]">
+            <span className="text-slate-400 block font-mono text-[9.5px]">Ruas Jalan Terdekat:</span>
+            <span className="text-cyan-300 font-extrabold text-xs block truncate mt-0.5">
+              {mapSelectedPoint.nearestSegment.name} ({mapSelectedPoint.nearestSegment.province})
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-1">
+            <button
+              onClick={() => {
+                setCustomCoordinates(mapSelectedPoint.coordinates);
+                setFormSegmentId(mapSelectedPoint.nearestSegment.id);
+                setMapSelectedPoint(null);
+                setIsReportFormOpen(true);
+              }}
+              className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center space-x-1.5 shadow-lg shadow-emerald-600/30 border border-white/20 transition-all cursor-pointer"
+            >
+              <CheckCircle className="w-4 h-4 text-white" />
+              <span>✓ Setujui & Buat Laporan</span>
+            </button>
+            <button
+              onClick={() => setMapSelectedPoint(null)}
+              className="py-2 px-3 rounded-xl bg-rose-600/30 hover:bg-rose-600 text-rose-200 hover:text-white font-extrabold text-xs border border-rose-500/40 transition-all cursor-pointer"
+            >
+              ✕ Batal
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Role Context Lens Header Bar (Floating Top) - ONLY for Official Roles */}
       {!isRegularUser && (
@@ -1217,28 +1202,28 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       )}
 
       {/* Top Floating Control Bar (Filters & Search) */}
-      <div className={`absolute ${isRegularUser ? (isMobileCardCollapsed ? 'top-4 left-4' : 'top-[16.5rem] sm:top-4 left-4 sm:left-[21rem] md:left-[22.5rem]') : 'top-20 left-4'} right-4 z-10 flex flex-wrap items-center justify-between gap-2.5 pointer-events-none transition-all duration-300`}>
-        {/* Search & Filters */}
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-1.5 sm:gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 p-2 rounded-2xl shadow-2xl w-full sm:w-auto">
+      <div className={`absolute ${isRegularUser ? (isMobileCardCollapsed ? 'top-4 left-4' : 'top-[16.5rem] sm:top-4 left-4 sm:left-[21rem] md:left-[22.5rem]') : 'top-20 left-4'} right-4 z-10 flex items-center justify-between pointer-events-none transition-all duration-300 max-w-full overflow-hidden`}>
+        {/* Search & Filters in 1 Single Horizontal Row */}
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 p-1.5 rounded-2xl shadow-2xl overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
           {/* Search Box */}
-          <div className="relative w-full sm:w-auto">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+          <div className="relative shrink-0">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari ruas jalan / koridor..."
+              placeholder="Cari ruas jalan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-950/80 border border-white/10 text-slate-100 text-xs rounded-xl pl-9 pr-3 py-1.5 w-full sm:w-44 focus:outline-none focus:border-indigo-400 transition-all placeholder:text-slate-500"
+              className="bg-slate-950/80 border border-white/10 text-slate-100 text-[10.5px] rounded-xl pl-8 pr-2.5 py-1 w-28 sm:w-40 focus:outline-none focus:border-indigo-400 transition-all placeholder:text-slate-500 font-medium"
             />
           </div>
 
           {/* Province Filter */}
-          <div className="flex items-center space-x-1 w-full sm:w-auto">
-            <Filter className="w-3.5 h-3.5 text-slate-400 ml-1 shrink-0" />
+          <div className="flex items-center space-x-1 shrink-0">
+            <Filter className="w-3 h-3 text-slate-400 ml-1 shrink-0" />
             <select
               value={provinceFilter}
               onChange={(e) => setProvinceFilter(e.target.value)}
-              className="bg-slate-950/80 border border-white/10 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-indigo-400 w-full sm:w-auto"
+              className="bg-slate-950/80 border border-white/10 text-slate-200 text-[10.5px] rounded-xl px-2 py-1 focus:outline-none focus:border-indigo-400 font-medium cursor-pointer"
             >
               <option value="ALL">Semua Provinsi</option>
               <option value="Jawa Barat">Jawa Barat</option>
@@ -1253,7 +1238,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           <select
             value={conditionFilter}
             onChange={(e) => setConditionFilter(e.target.value)}
-            className="bg-slate-950/80 border border-white/10 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-indigo-400 w-full sm:w-auto"
+            className="bg-slate-950/80 border border-white/10 text-slate-200 text-[10.5px] rounded-xl px-2 py-1 focus:outline-none focus:border-indigo-400 shrink-0 font-medium cursor-pointer"
           >
             <option value="ALL">Semua Kondisi PCI</option>
             <option value="GOOD">Kondisi Mantap (PCI &gt; 70)</option>
@@ -1262,49 +1247,48 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             <option value="HEAVY_DAMAGE">Rusak Berat (PCI &lt; 35)</option>
           </select>
 
-          {/* WIM Only Toggle & Community Reports Pin Toggle */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            <button
-              onClick={() => setShowWimOnly(!showWimOnly)}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all ${
-                showWimOnly
-                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 border border-white/20'
-                  : 'bg-slate-950/80 text-slate-300 border border-white/10 hover:bg-slate-800'
-              }`}
-            >
-              <Truck className="w-3.5 h-3.5 text-cyan-300" />
-              <span>Ada Stasiun WIM</span>
-              {showWimOnly && (
-                <span className="ml-1 px-1.5 py-0.2 text-[9.5px] bg-white/25 text-white rounded-full font-mono font-bold">
-                  {filteredWimStations.length} Pin
-                </span>
-              )}
-            </button>
+          {/* WIM Only Toggle */}
+          <button
+            onClick={() => setShowWimOnly(!showWimOnly)}
+            className={`shrink-0 px-2.5 py-1 rounded-xl text-[10.5px] font-semibold flex items-center space-x-1 transition-all ${
+              showWimOnly
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 border border-white/20'
+                : 'bg-slate-950/80 text-slate-300 border border-white/10 hover:bg-slate-800'
+            }`}
+          >
+            <Truck className="w-3 h-3 text-cyan-300 shrink-0" />
+            <span>Ada Stasiun WIM</span>
+            {showWimOnly && (
+              <span className="ml-1 px-1.5 py-0.2 text-[9px] bg-white/25 text-white rounded-full font-mono font-bold">
+                {filteredWimStations.length} Pin
+              </span>
+            )}
+          </button>
 
-            <button
-              onClick={() => setShowCommunityReports(!showCommunityReports)}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all ${
-                showCommunityReports
-                  ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 border border-white/20'
-                  : 'bg-slate-950/80 text-slate-300 border border-white/10 hover:bg-slate-800'
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5 text-rose-300" />
-              <span>Laporan Warga</span>
-              {showCommunityReports && (
-                <span className="ml-1 px-1.5 py-0.2 text-[9.5px] bg-white/25 text-white rounded-full font-mono font-bold">
-                  {communityReports.length} Pin
-                </span>
-              )}
-            </button>
-          </div>
+          {/* Community Reports Pin Toggle */}
+          <button
+            onClick={() => setShowCommunityReports(!showCommunityReports)}
+            className={`shrink-0 px-2.5 py-1 rounded-xl text-[10.5px] font-semibold flex items-center space-x-1 transition-all ${
+              showCommunityReports
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 border border-white/20'
+                : 'bg-slate-950/80 text-slate-300 border border-white/10 hover:bg-slate-800'
+            }`}
+          >
+            <Camera className="w-3 h-3 text-rose-300 shrink-0" />
+            <span>Laporan Warga</span>
+            {showCommunityReports && (
+              <span className="ml-1 px-1.5 py-0.2 text-[9px] bg-white/25 text-white rounded-full font-mono font-bold">
+                {communityReports.length} Pin
+              </span>
+            )}
+          </button>
 
           {/* Dropdown WIM Overload Category Filter */}
           {showWimOnly && (
             <select
               value={wimStatusFilter}
               onChange={(e) => setWimStatusFilter(e.target.value)}
-              className="bg-slate-950/90 border border-rose-500/60 text-rose-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-rose-400 font-semibold shadow-xl transition-all animate-in fade-in duration-200 cursor-pointer w-full sm:w-auto"
+              className="bg-slate-950/90 border border-rose-500/60 text-rose-200 text-[10.5px] rounded-xl px-2 py-1 focus:outline-none focus:border-rose-400 font-semibold shadow-xl shrink-0 cursor-pointer"
             >
               <option value="ALL">Semua Stasiun WIM (100%)</option>
               <option value="EXTREME">🔴 Overload Ekstrim (&gt;100%)</option>
