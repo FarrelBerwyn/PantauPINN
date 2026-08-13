@@ -19,7 +19,7 @@ export const INITIAL_COMMUNITY_REPORTS: DamageReport[] = [
     estimatedAreaM2: 3.5,
     photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=600',
     description: 'Lubang sangat dalam melintang di lajur kiri jalan utama kendaraan berat. Menyebabkan bahaya tinggi bagi truk trailer dan mobil pribadi saat malam hari.',
-    status: 'VERIFIED_BY_ENGINEER',
+    status: 'REPAIRED',
     upvotesCount: 42,
     userUpvoted: true,
     wimCorrelation: {

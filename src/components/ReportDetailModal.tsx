@@ -76,6 +76,8 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
     report.repairDetails?.engineerNote ||
     'Telah diverifikasi dan ditindaklanjuti oleh tim pemeliharaan jalan berdasarkan korelasi telemetri WIM & PINN.';
 
+  const isRepairedStatus = report.status === 'REPAIRED';
+
   return (
     <div className="fixed inset-0 z-[1400] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200 pointer-events-auto overflow-y-auto">
       <div className="bg-slate-900/95 border border-white/20 rounded-3xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-4 text-slate-100 max-h-[92vh] overflow-y-auto my-auto relative font-sans">
@@ -93,8 +95,8 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${severityColors[report.severity]}`}>
                   {report.severity}
                 </span>
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${statusBadges[report.status]}`}>
-                  {statusLabels[report.status]}
+                <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${statusBadges[report.status]}`}>
+                  {report.status === 'REPAIRED' ? '🎉 Selesai Perbaikan (PUPR)' : statusLabels[report.status]}
                 </span>
               </div>
               <h2 className="text-sm sm:text-base font-extrabold text-white mt-1">
@@ -140,10 +142,17 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
         {/* BEFORE & AFTER PHOTO COMPARISON SECTION */}
         <div className="space-y-2.5">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-cyan-400" />
-              Komparasi Foto Kerusakan (Sebelum vs. Sesudah Perbaikan)
-            </h3>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                Komparasi Foto Kerusakan (Sebelum vs. Sesudah Perbaikan)
+              </h3>
+              {isRepairedStatus && (
+                <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse">
+                  🎉 Penanganan Selesai
+                </span>
+              )}
+            </div>
 
             {/* View Mode Switcher Buttons */}
             <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-white/10 text-[10px] font-mono font-bold">

@@ -60,6 +60,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [wimStatusFilter, setWimStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Mobile Card Collapse State
+  const [isMobileCardCollapsed, setIsMobileCardCollapsed] = useState<boolean>(false);
+
   // Report Detail Modal State
   const [detailModalReport, setDetailModalReport] = useState<DamageReport | null>(null);
 
@@ -724,46 +727,51 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     // Render Community Damage Report Markers & Pulsing Radius Circles when showCommunityReports is enabled
     if (showCommunityReports && communityReports && communityReports.length > 0) {
       communityReports.forEach((report) => {
+        const isRepaired = report.status === 'REPAIRED';
+
         // Dynamic pulse radius & color based on damage severity
-        const reportRadiusMeters =
-          report.severity === 'CRITICAL'
-            ? 3800
-            : report.severity === 'SEVERE'
-            ? 2400
-            : report.severity === 'MODERATE'
-            ? 1300
-            : 700;
+        const reportRadiusMeters = isRepaired
+          ? 500
+          : report.severity === 'CRITICAL'
+          ? 3800
+          : report.severity === 'SEVERE'
+          ? 2400
+          : report.severity === 'MODERATE'
+          ? 1300
+          : 700;
 
-        const reportColor =
-          report.severity === 'CRITICAL'
-            ? '#ef4444'
-            : report.severity === 'SEVERE'
-            ? '#f97316'
-            : report.severity === 'MODERATE'
-            ? '#f59e0b'
-            : '#3b82f6';
+        const reportColor = isRepaired
+          ? '#10b981'
+          : report.severity === 'CRITICAL'
+          ? '#ef4444'
+          : report.severity === 'SEVERE'
+          ? '#f97316'
+          : report.severity === 'MODERATE'
+          ? '#f59e0b'
+          : '#3b82f6';
 
-        const reportPulseDuration =
-          report.severity === 'CRITICAL'
-            ? '0.8s'
-            : report.severity === 'SEVERE'
-            ? '1.3s'
-            : report.severity === 'MODERATE'
-            ? '2.1s'
-            : '3.4s';
+        const reportPulseDuration = isRepaired
+          ? '4.0s'
+          : report.severity === 'CRITICAL'
+          ? '0.8s'
+          : report.severity === 'SEVERE'
+          ? '1.3s'
+          : report.severity === 'MODERATE'
+          ? '2.1s'
+          : '3.4s';
 
         // 1. Geodesic animated Leaflet circle for Community Damage Report
         const reportCircle = L.circle(report.coordinates, {
           radius: reportRadiusMeters,
           color: reportColor,
           fillColor: reportColor,
-          fillOpacity: 0.18,
+          fillOpacity: isRepaired ? 0.12 : 0.18,
           weight: 2,
           className: 'leaflet-pci-animated-circle'
         }).addTo(layerGroup);
 
         reportCircle.bindTooltip(
-          `<b>Laporan Warga (${report.damageTypeLabel})</b><br/>Tingkat Kerusakan: <strong style="color: ${reportColor};">${report.severity}</strong><br/>Radius Denyut Dampak: <strong>${(reportRadiusMeters / 1000).toFixed(1)} km</strong>`,
+          `<b>Laporan Warga (${report.damageTypeLabel})</b><br/>Status: <strong style="color: ${reportColor};">${isRepaired ? '🎉 Selesai Perbaikan' : report.severity}</strong><br/>Radius Dampak: <strong>${(reportRadiusMeters / 1000).toFixed(1)} km</strong>`,
           { direction: 'top', opacity: 0.9 }
         );
 
@@ -930,28 +938,51 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
       {/* LEFT SIDE VERTICAL CARD: Fitur Pelaporan Kerusakan Jalan (Masyarakat) - ONLY for Regular User accounts */}
       {isRegularUser && (
-        <div className="absolute top-4 left-4 z-20 w-72 sm:w-80 md:w-84 max-h-[calc(100vh-14.5rem)] flex flex-col pointer-events-auto bg-slate-900/90 backdrop-blur-xl border border-cyan-500/40 rounded-2xl p-2.5 sm:p-3 shadow-2xl space-y-2 text-slate-200 text-xs animate-in fade-in slide-in-from-left-4 duration-300">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2">
-            <div className="flex items-center space-x-2">
-              <div className="p-1.5 bg-indigo-500/20 text-cyan-300 rounded-lg border border-indigo-500/30 shrink-0">
-                <Camera className="w-3.5 h-3.5 text-cyan-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1 flex-wrap">
-                  <h3 className="text-[11.5px] font-extrabold text-white">
-                    Pelaporan Kerusakan (Masyarakat)
-                  </h3>
-                  <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                    WIM Linked
-                  </span>
-                </div>
-                <p className="text-[9.5px] text-slate-400 mt-0.5 leading-tight">
-                  Laporan foto & lokasi ter-korelasi sensor WIM & PINN.
-                </p>
-              </div>
+        isMobileCardCollapsed ? (
+          <button
+            onClick={() => setIsMobileCardCollapsed(false)}
+            className="absolute top-4 left-4 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-xl border border-cyan-500/40 rounded-2xl p-2 sm:p-2.5 shadow-2xl flex items-center space-x-2 text-white font-extrabold text-xs animate-in fade-in duration-200 hover:bg-slate-800"
+          >
+            <div className="p-1.5 bg-indigo-500/20 text-cyan-300 rounded-lg border border-indigo-500/30">
+              <Camera className="w-3.5 h-3.5 text-cyan-400" />
             </div>
-          </div>
+            <span className="text-[11px] sm:text-xs">📢 Laporan Kerusakan</span>
+            <span className="text-[9.5px] font-mono font-bold bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/30">
+              {communityReports ? communityReports.length : 0}
+            </span>
+          </button>
+        ) : (
+          <div className="absolute top-4 left-4 right-4 sm:right-auto z-20 w-auto sm:w-80 md:w-84 max-h-[calc(100vh-18rem)] flex flex-col pointer-events-auto bg-slate-900/95 backdrop-blur-xl border border-cyan-500/40 rounded-2xl p-2.5 sm:p-3 shadow-2xl space-y-2 text-slate-200 text-xs animate-in fade-in slide-in-from-left-4 duration-300">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2">
+              <div className="flex items-center space-x-2">
+                <div className="p-1.5 bg-indigo-500/20 text-cyan-300 rounded-lg border border-indigo-500/30 shrink-0">
+                  <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <h3 className="text-[11.5px] font-extrabold text-white">
+                      Pelaporan Kerusakan (Masyarakat)
+                    </h3>
+                    <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      WIM Linked
+                    </span>
+                  </div>
+                  <p className="text-[9.5px] text-slate-400 mt-0.5 leading-tight">
+                    Laporan foto & lokasi ter-korelasi sensor WIM & PINN.
+                  </p>
+                </div>
+              </div>
+
+              {/* Minimize Collapse Button for Mobile / Small Screens */}
+              <button
+                onClick={() => setIsMobileCardCollapsed(true)}
+                className="p-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white transition-colors border border-white/10 shrink-0"
+                title="Minimalkan Card"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
           {/* Add New Report CTA */}
           <button
@@ -963,17 +994,22 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           </button>
 
           {/* Vertical Scrollable Report List */}
-          <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 max-h-[190px] sm:max-h-[220px] custom-scrollbar">
+          <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 max-h-[150px] sm:max-h-[170px] custom-scrollbar">
             {communityReports && communityReports.length > 0 ? (
               (showAllCommunityReports ? communityReports : communityReports.slice(0, 3)).map((rep) => (
                 <div
                   key={rep.id}
-                  onClick={() => setDetailModalReport(rep)}
-                  className="bg-slate-950/70 border border-white/10 hover:border-indigo-500/50 hover:bg-slate-950/90 rounded-xl p-2 space-y-1 transition-all cursor-pointer group"
+                  onClick={() => {
+                    setDetailModalReport(rep);
+                    if (mapInstanceRef.current) {
+                      mapInstanceRef.current.flyTo(rep.coordinates, 10, { duration: 1.2 });
+                    }
+                  }}
+                  className="bg-slate-950/80 border border-white/10 hover:border-cyan-400/60 hover:bg-slate-950 rounded-xl p-2 space-y-1 transition-all cursor-pointer group shadow-md"
                 >
                   <div className="flex items-start justify-between gap-1">
                     <div>
-                      <span className="font-bold text-white group-hover:text-cyan-300 text-[11px] block truncate max-w-[160px] transition-colors">
+                      <span className="font-extrabold text-white group-hover:text-cyan-300 text-[11px] block truncate max-w-[170px] transition-colors">
                         {rep.segmentName}
                       </span>
                       <span className="text-[9px] text-slate-400 font-mono">
@@ -990,18 +1026,19 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   </p>
 
                   <div className="flex items-center justify-between text-[9.5px] pt-0.5">
-                    <span className="text-cyan-300 font-mono flex items-center gap-1 text-[9px]">
-                      <Truck className="w-3 h-3 text-cyan-400" />
+                    <span className="text-cyan-300 font-mono flex items-center gap-1 text-[9px] truncate max-w-[170px]">
+                      <Truck className="w-3 h-3 text-cyan-400 shrink-0" />
                       {rep.wimCorrelation ? `${rep.wimCorrelation.recentTruckPlate} (+${rep.wimCorrelation.overloadPercent}%)` : 'WIM Linked'}
                     </span>
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         if (onUpvoteReport) onUpvoteReport(rep.id);
                       }}
-                      className={`px-1.5 py-0.2 rounded font-mono font-bold text-[9px] transition-all ${
+                      className={`px-1.5 py-0.5 rounded-md font-mono font-bold text-[9px] transition-all shrink-0 ${
                         rep.userUpvoted
-                          ? 'bg-cyan-500 text-slate-950 font-bold'
+                          ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm shadow-cyan-500/30'
                           : 'bg-white/10 text-slate-300 hover:bg-white/20'
                       }`}
                     >
@@ -1038,10 +1075,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             </button>
           </div>
         </div>
+      )
       )}
 
       {/* Top Floating Control Bar (Filters & Search) */}
-      <div className={`absolute ${isRegularUser ? 'top-4 left-4 sm:left-[19.5rem] md:left-[22.5rem]' : 'top-20 left-4'} right-4 z-10 flex flex-wrap items-center justify-between gap-3 pointer-events-none transition-all duration-300`}>
+      <div className={`absolute ${isRegularUser ? (isMobileCardCollapsed ? 'top-4 left-4' : 'top-[16.5rem] sm:top-4 left-4 sm:left-[21rem] md:left-[22.5rem]') : 'top-20 left-4'} right-4 z-10 flex flex-wrap items-center justify-between gap-2.5 pointer-events-none transition-all duration-300`}>
         {/* Search & Filters */}
         <div className="flex flex-wrap items-center gap-2 pointer-events-auto bg-slate-900/85 backdrop-blur-xl border border-white/15 p-2 rounded-2xl shadow-2xl">
           {/* Search Box */}
@@ -1164,145 +1202,148 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       </div>
 
       {/* Bottom Floating Stats & Legend Bar */}
-      <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none space-y-3">
+      <div className="absolute bottom-6 sm:bottom-8 left-2 sm:left-4 right-2 sm:right-4 z-10 pointer-events-none space-y-3">
         {/* BOTTOM STATS & LEGEND COLUMN */}
-        <div className="pointer-events-auto max-w-7xl mx-auto bg-slate-900/85 backdrop-blur-xl border border-white/15 rounded-2xl p-3 shadow-2xl grid grid-cols-2 md:grid-cols-5 gap-2.5 text-slate-200 text-xs">
+        <div className="pointer-events-auto max-w-7xl mx-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl p-2 sm:p-3 shadow-2xl grid grid-cols-2 md:grid-cols-5 gap-1.5 sm:gap-2.5 text-slate-200 text-xs">
           {/* Stat 1 */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center space-x-2.5">
-            <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
-              <MapPin className="w-4 h-4" />
+          <div className="bg-white/5 border border-white/10 rounded-xl p-2 sm:p-2.5 flex items-center space-x-2 sm:space-x-2.5">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] font-mono text-slate-400 uppercase truncate">
+              <p className="text-[8.5px] sm:text-[9px] font-mono text-slate-400 uppercase truncate">
                 Total Jaringan
               </p>
-              <p className="text-xs font-extrabold text-white font-mono">
-                {totalLengthKm} <span className="text-[10px] font-normal text-slate-400">km</span>
+              <p className="text-[11px] sm:text-xs font-extrabold text-white font-mono">
+                {totalLengthKm} <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">km</span>
               </p>
             </div>
           </div>
 
           {/* Stat 2 */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center space-x-2.5">
-            <div className="p-2 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
-              <AlertTriangle className="w-4 h-4" />
+          <div className="bg-white/5 border border-white/10 rounded-xl p-2 sm:p-2.5 flex items-center space-x-2 sm:space-x-2.5">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+              <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] font-mono text-slate-400 uppercase truncate">
-                Tidak Mantap (PUPR 2025)
+              <p className="text-[8.5px] sm:text-[9px] font-mono text-slate-400 uppercase truncate">
+                Tidak Mantap (2025)
               </p>
-              <p className="text-xs font-extrabold text-rose-400 font-mono">
-                {damagedPercent}% <span className="text-[10px] font-normal text-slate-400">({damagedKm} km)</span>
+              <p className="text-[11px] sm:text-xs font-extrabold text-rose-400 font-mono">
+                {damagedPercent}% <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">({damagedKm}km)</span>
               </p>
             </div>
           </div>
 
           {/* Stat 3 */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center space-x-2.5">
-            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-              <ShieldAlert className="w-4 h-4" />
+          <div className="bg-white/5 border border-white/10 rounded-xl p-2 sm:p-2.5 flex items-center space-x-2 sm:space-x-2.5">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+              <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] font-mono text-slate-400 uppercase truncate">
-                Alert Red ODOL WIM
+              <p className="text-[8.5px] sm:text-[9px] font-mono text-slate-400 uppercase truncate">
+                Peringatan ODOL
               </p>
-              <p className="text-xs font-extrabold text-amber-300 font-mono">
-                {activeRedAlertsCount} Ruas Kritis
+              <p className="text-[11px] sm:text-xs font-extrabold text-amber-300 font-mono">
+                {activeRedAlertsCount} Ruas
               </p>
             </div>
           </div>
 
           {/* Stat 4 */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center space-x-2.5">
-            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-              <BarChart2 className="w-4 h-4" />
+          <div className="bg-white/5 border border-white/10 rounded-xl p-2 sm:p-2.5 flex items-center space-x-2 sm:space-x-2.5">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+              <BarChart2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] font-mono text-slate-400 uppercase truncate">
+              <p className="text-[8.5px] sm:text-[9px] font-mono text-slate-400 uppercase truncate">
                 Rata-rata PCI
               </p>
-              <p className="text-xs font-extrabold text-emerald-400 font-mono">
+              <p className="text-[11px] sm:text-xs font-extrabold text-emerald-400 font-mono">
                 {avgPci} / 100
               </p>
             </div>
           </div>
 
           {/* Map PCI Legend & WIM Overload Legend */}
-          <div className="col-span-2 md:col-span-5 bg-white/5 border border-white/10 rounded-xl p-2.5 flex flex-col gap-2 text-[10px]">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
-              <div className="flex items-center space-x-3 text-[9.5px]">
-                <span className="font-bold text-slate-300 uppercase font-mono border-r border-white/10 pr-2">
-                  Legenda PCI:
+          <div className="col-span-2 md:col-span-5 bg-white/5 border border-white/10 rounded-xl p-2 sm:p-2.5 flex flex-col gap-1.5 sm:gap-2 text-[9.5px] sm:text-[10px]">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[9px] sm:text-[9.5px]">
+                <span className="font-bold text-slate-300 uppercase font-mono border-r border-white/10 pr-1.5">
+                  PCI:
                 </span>
                 <span className="flex items-center text-slate-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1" /> Mantap (&gt;70)
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1" /> Mantap (&gt;70)
                 </span>
                 <span className="flex items-center text-slate-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1" /> Sedang (50-70)
+                  <span className="w-2 h-2 rounded-full bg-amber-500 mr-1" /> Sedang (50-70)
                 </span>
                 <span className="flex items-center text-slate-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mr-1" /> Rusak Ringan
+                  <span className="w-2 h-2 rounded-full bg-orange-500 mr-1" /> Rusak Ringan
                 </span>
                 <span className="flex items-center text-slate-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1" /> Rusak Berat (&lt;35)
+                  <span className="w-2 h-2 rounded-full bg-rose-500 mr-1" /> Rusak Berat (&lt;35)
                 </span>
               </div>
 
-              <div className="flex items-center space-x-1.5 text-[9px] text-cyan-300 font-mono bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-md">
+              <div className="hidden sm:flex items-center space-x-1.5 text-[9px] text-cyan-300 font-mono bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-md">
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                <span>⚡ Animasi Radius: Radius & Radar Berbanding Terbalik Dengan Nilai PCI (Semakin Rusak = Radius Makin Luas & Frekuensi Radar Lebih Cepat)</span>
+                <span>⚡ Animasi Radius Berbanding Terbalik Nilai PCI</span>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center space-x-3 text-[9.5px]">
-              <span className="font-extrabold text-cyan-300 font-mono flex items-center gap-1 border-r border-white/10 pr-2">
-                <Truck className="w-3 h-3 text-cyan-400" /> WIM BINA MARGA (PUPR):
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1 shadow-sm shadow-emerald-500/50" />
-                Tidak Overload
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 mr-1 shadow-sm shadow-yellow-400/50" />
-                Overload Ringan (5-20%)
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mr-1 shadow-sm shadow-orange-500/50" />
-                Overload Sedang (20-50%)
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1 shadow-sm shadow-purple-500/50" />
-                Overload Berat (&gt;50%)
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-1 shadow-sm shadow-red-500/50" />
-                Overload Ekstrim (&gt;100%)
-              </span>
-            </div>
+            {/* WIM & Radius Legends - ONLY for Official Roles */}
+            {!isRegularUser && (
+              <>
+                <div className="flex flex-wrap items-center gap-2 text-[9px] sm:text-[9.5px] border-t border-white/10 pt-1.5 mt-0.5">
+                  <span className="font-extrabold text-cyan-300 font-mono flex items-center gap-1 border-r border-white/10 pr-1.5">
+                    <Truck className="w-3 h-3 text-cyan-400" /> WIM (PUPR):
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1" /> Normal
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-yellow-400 mr-1" /> Overload (5-20%)
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-orange-500 mr-1" /> Overload (20-50%)
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 mr-1" /> Overload (&gt;50%)
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-red-500 mr-1" /> Ekstrim (&gt;100%)
+                  </span>
+                </div>
 
-            <div className="flex flex-wrap items-center space-x-3 text-[9.5px] border-t border-white/10 pt-1.5 mt-0.5">
-              <span className="font-extrabold text-rose-400 font-mono flex items-center gap-1 border-r border-white/10 pr-2">
-                <Camera className="w-3 h-3 text-rose-400" /> LAPORAN WARGA (RADIUS DENYUT):
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1 shadow-sm shadow-rose-500/50" />
-                CRITICAL (3.8km, Denyut 0.8s)
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mr-1 shadow-sm shadow-orange-500/50" />
-                SEVERE (2.4km, Denyut 1.3s)
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 mr-1 shadow-sm shadow-amber-400/50" />
-                MODERATE (1.3km, Denyut 2.1s)
-              </span>
-              <span className="flex items-center text-slate-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1 shadow-sm shadow-blue-500/50" />
-                LIGHT (0.7km, Denyut 3.4s)
-              </span>
-            </div>
+                <div className="flex flex-wrap items-center gap-2 text-[9px] sm:text-[9.5px] border-t border-white/10 pt-1.5 mt-0.5">
+                  <span className="font-extrabold text-rose-400 font-mono flex items-center gap-1 border-r border-white/10 pr-1.5">
+                    <Camera className="w-3 h-3 text-rose-400" /> LAPORAN WARGA:
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 mr-1" /> CRITICAL (3.8km)
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-orange-500 mr-1" /> SEVERE (2.4km)
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 mr-1" /> MODERATE (1.3km)
+                  </span>
+                  <span className="flex items-center text-slate-200">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 mr-1" /> LIGHT (0.7km)
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Absolute Bottom Copyright Text Outside Cards */}
+      <div className="absolute bottom-1 sm:bottom-1.5 left-0 right-0 z-20 text-center pointer-events-none pb-0.5 px-2">
+        <p className="text-[9.5px] sm:text-[11px] font-medium text-slate-400 font-sans tracking-wide drop-shadow truncate">
+          PAVEMENT-PINN © 2026 | Intel AI Global Impact Festival 2026
+        </p>
       </div>
 
       {/* REPORT FORM MODAL INSIDE LEAFLETMAP */}

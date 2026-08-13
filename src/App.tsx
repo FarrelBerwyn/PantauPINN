@@ -163,7 +163,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className="h-screen h-[100dvh] w-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
       {/* Navbar Header */}
       <Navbar
         activeRole={activeRole}
@@ -186,7 +186,7 @@ export default function App() {
       />
 
       {/* Main View Area (Full Screen Base Map + Floating Glass Overlays) */}
-      <main className="relative flex-1 w-full h-[calc(100vh-4rem)] overflow-hidden bg-slate-950">
+      <main className="relative flex-1 w-full h-full min-h-0 overflow-hidden bg-slate-950">
         {/* Full-Screen Base Geospasial Map */}
         <LeafletMap
           roadSegments={roadSegments}
@@ -333,16 +333,6 @@ export default function App() {
         isOpen={isOpenBinaMargaModal}
         onClose={() => setIsOpenBinaMargaModal(false)}
       />
-
-      {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500">
-        <p>
-          PAVEMENT-PINN &copy; 2026 | Physics-Informed Neural Network Decision Support System Berbasis Intel® OpenVINO™ Edge AI
-        </p>
-        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-          Platform dibuat khusus Intel AI Global Impact Festival 2026
-        </p>
-      </footer>
     </div>
   );
 }
