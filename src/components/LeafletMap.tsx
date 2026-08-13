@@ -1518,20 +1518,30 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
               {/* Form Select Segment */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase">
-                  1. Lokasi Ruas Jalan
-                </label>
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase">
+                    1. Lokasi Ruas Jalan
+                  </label>
+                  {customCoordinates && (
+                    <span className="text-[9.5px] text-cyan-300 font-mono font-bold bg-cyan-950/80 px-2 py-0.5 rounded-lg border border-cyan-500/40">
+                      📍 Terdeteksi Otomatis di Sekitar Pin Point
+                    </span>
+                  )}
+                </div>
                 <select
                   value={formSegmentId}
                   onChange={(e) => setFormSegmentId(e.target.value)}
-                  className="w-full bg-slate-950/80 border border-white/15 text-white rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400 font-semibold"
+                  className="w-full bg-slate-950/80 border border-white/15 focus:border-cyan-400 text-white rounded-xl px-3 py-2 focus:outline-none font-semibold text-xs"
                 >
                   {roadSegments.map((seg) => (
                     <option key={seg.id} value={seg.id}>
-                      {seg.name} ({seg.province})
+                      {seg.name} ({seg.province}) {seg.id === formSegmentId && customCoordinates ? '📍 [Ruas Terdekat Pin Point]' : ''}
                     </option>
                   ))}
                 </select>
+                <p className="text-[10px] text-slate-400 italic">
+                  *Nama ruas jalan dipilih secara presisi berdasarkan analisis radius wilayah geografis di sekitar lokasi pin point peta.
+                </p>
               </div>
 
               {/* Damage Type & Severity */}
