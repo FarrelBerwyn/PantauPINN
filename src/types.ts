@@ -63,6 +63,16 @@ export interface DamageReport {
     estimatedPinnContributionPercent: number;
     causeAnalysisSummary: string;
   };
+
+  // Infrastructure Repair & Before/After Comparison Details
+  repairDetails?: {
+    afterPhotoUrl: string;
+    repairDate?: string;
+    repairMethod?: string;
+    repairedPciImprovement?: string;
+    engineerNote?: string;
+    agencyInCharge?: string;
+  };
 }
 
 export interface DeviceHardwareProfile {

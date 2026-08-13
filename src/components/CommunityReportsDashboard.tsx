@@ -31,6 +31,7 @@ import {
 } from '../types';
 import { UserAccount } from '../data/userAccounts';
 import { ALL_BINA_MARGA_WIM_STATIONS } from '../data/indonesianRoads';
+import { ReportDetailModal } from './ReportDetailModal';
 
 interface CommunityReportsDashboardProps {
   activeRole: UserRole;
@@ -53,6 +54,9 @@ export const CommunityReportsDashboard: React.FC<CommunityReportsDashboardProps>
   onSelectSegmentForMap,
   onRunSimulationForSegment
 }) => {
+  // Detail & Before/After Comparison Modal State
+  const [selectedDetailReport, setSelectedDetailReport] = useState<DamageReport | null>(null);
+
   // Public Viewer Access Mode (Only applicable for PUBLIC_VIEWER)
   const [viewerInputMode, setViewerInputMode] = useState<'READ_ONLY' | 'INPUT_ENABLED'>('READ_ONLY');
 
@@ -543,7 +547,8 @@ export const CommunityReportsDashboard: React.FC<CommunityReportsDashboardProps>
         {filteredReports.map((report) => (
           <div
             key={report.id}
-            className="bg-slate-900/90 border border-white/10 hover:border-indigo-500/40 rounded-3xl p-4 space-y-3 shadow-xl transition-all flex flex-col justify-between group"
+            onClick={() => setSelectedDetailReport(report)}
+            className="bg-slate-900/90 border border-white/10 hover:border-indigo-500/50 hover:bg-slate-900 rounded-3xl p-4 space-y-3 shadow-xl transition-all flex flex-col justify-between group cursor-pointer"
           >
             <div>
               {/* Reporter Header */}
@@ -583,7 +588,7 @@ export const CommunityReportsDashboard: React.FC<CommunityReportsDashboardProps>
 
               {/* Photo & Severity Badge */}
               <div className="relative mt-3 rounded-2xl overflow-hidden border border-white/10 h-40">
-                <img src={report.photoUrl} alt={report.damageTypeLabel} className="w-full h-full object-cover" />
+                <img src={report.photoUrl} alt={report.damageTypeLabel} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 <div className="absolute top-2 right-2 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-bold font-mono text-rose-400 border border-rose-500/30 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3 text-rose-400" />
                   <span>{report.severity}</span>
@@ -595,7 +600,7 @@ export const CommunityReportsDashboard: React.FC<CommunityReportsDashboardProps>
 
               {/* Location & Title */}
               <div className="mt-3 space-y-1">
-                <h3 className="text-xs font-extrabold text-white line-clamp-1">{report.segmentName}</h3>
+                <h3 className="text-xs font-extrabold text-white line-clamp-1 group-hover:text-cyan-300 transition-colors">{report.segmentName}</h3>
                 <p className="text-[10.5px] text-slate-400 font-medium">{report.corridor}</p>
                 <div className="inline-block bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded-md font-mono">
                   {report.damageTypeLabel} &bull; Dalam: {report.estimatedDepthCm} cm &bull; Luas: {report.estimatedAreaM2} m²
@@ -625,30 +630,59 @@ export const CommunityReportsDashboard: React.FC<CommunityReportsDashboardProps>
             </div>
 
             {/* Bottom Card Controls & Upvote */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between mt-3 text-xs">
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between mt-3 text-xs gap-2">
               <button
-                onClick={() => onUpvoteReport(report.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center space-x-1.5 border ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpvoteReport(report.id);
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center space-x-1 border ${
                   report.userUpvoted
                     ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-lg shadow-cyan-500/20'
                     : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
                 }`}
               >
                 <ThumbsUp className="w-3.5 h-3.5" />
-                <span>{report.upvotesCount} Dukungan</span>
+                <span>{report.upvotesCount}</span>
               </button>
 
               <button
-                onClick={() => onSelectSegmentForMap(report.segmentId)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDetailReport(report);
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] font-mono transition-all flex items-center space-x-1 border border-white/20 shadow-md"
+              >
+                <Eye className="w-3.5 h-3.5 text-cyan-200" />
+                <span>Sebelum/Sesudah</span>
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectSegmentForMap(report.segmentId);
+                }}
                 className="text-xs font-bold text-indigo-400 hover:text-cyan-300 font-mono flex items-center space-x-1"
               >
-                <span>Lihat di Peta</span>
+                <span>Peta</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Report Detail & Before/After Comparison Modal */}
+      <ReportDetailModal
+        isOpen={!!selectedDetailReport}
+        onClose={() => setSelectedDetailReport(null)}
+        report={selectedDetailReport}
+        onUpvote={onUpvoteReport}
+        onFocusMap={(rep) => {
+          setSelectedDetailReport(null);
+          onSelectSegmentForMap(rep.segmentId);
+        }}
+      />
     </div>
   );
 };

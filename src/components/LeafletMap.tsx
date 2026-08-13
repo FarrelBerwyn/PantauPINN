@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { DamageReport, DamageType, ReportSeverity, RoadSegment, UserRole } from '../types';
 import { UserAccount } from '../data/userAccounts';
 import { ALL_BINA_MARGA_WIM_STATIONS } from '../data/indonesianRoads';
+import { ReportDetailModal } from './ReportDetailModal';
 import {
   Filter,
   Search,
@@ -58,6 +59,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [showAllCommunityReports, setShowAllCommunityReports] = useState<boolean>(false);
   const [wimStatusFilter, setWimStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Report Detail Modal State
+  const [detailModalReport, setDetailModalReport] = useState<DamageReport | null>(null);
 
   // Report Modal Form State
   const [isReportFormOpen, setIsReportFormOpen] = useState<boolean>(false);
@@ -819,6 +823,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
         const reportMarker = L.marker(report.coordinates, { icon: reportIcon }).addTo(layerGroup);
 
+        reportMarker.on('click', () => setDetailModalReport(report));
+        reportCircle.on('click', () => setDetailModalReport(report));
+
         const reportPopupContent = `
           <div style="font-family: system-ui, -apple-system, sans-serif; padding: 6px; width: 280px; color: #0f172a;">
             <!-- Header -->
@@ -839,13 +846,17 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             ${
               report.wimCorrelation
                 ? `
-              <div style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; font-size: 10px; color: #1e293b;">
+              <div style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; font-size: 10px; color: #1e293b; margin-bottom: 6px;">
                 <strong style="color: #0284c7;">🚛 Korelasi WIM: ${report.wimCorrelation.recentTruckPlate}</strong> (${report.wimCorrelation.maxAxleLoadTon} Ton)
                 <div style="color: #475569; margin-top: 2px;">Overload: <strong style="color: #dc2626;">+${report.wimCorrelation.overloadPercent}%</strong> (Pemicu Utama PINN)</div>
               </div>
             `
                 : ''
             }
+
+            <div style="margin-top: 6px; font-size: 10.5px; font-weight: 700; color: #2563eb; text-align: center; background-color: #eff6ff; padding: 5px; border-radius: 6px; border: 1px solid #bfdbfe;">
+              🔍 Klik Pin Untuk Detail & Foto Sebelum/Sesudah
+            </div>
           </div>
         `;
 
@@ -957,11 +968,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               (showAllCommunityReports ? communityReports : communityReports.slice(0, 3)).map((rep) => (
                 <div
                   key={rep.id}
-                  className="bg-slate-950/70 border border-white/10 hover:border-indigo-500/40 rounded-xl p-2 space-y-1 transition-all"
+                  onClick={() => setDetailModalReport(rep)}
+                  className="bg-slate-950/70 border border-white/10 hover:border-indigo-500/50 hover:bg-slate-950/90 rounded-xl p-2 space-y-1 transition-all cursor-pointer group"
                 >
                   <div className="flex items-start justify-between gap-1">
                     <div>
-                      <span className="font-bold text-white text-[11px] block truncate max-w-[160px]">
+                      <span className="font-bold text-white group-hover:text-cyan-300 text-[11px] block truncate max-w-[160px] transition-colors">
                         {rep.segmentName}
                       </span>
                       <span className="text-[9px] text-slate-400 font-mono">
@@ -983,7 +995,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                       {rep.wimCorrelation ? `${rep.wimCorrelation.recentTruckPlate} (+${rep.wimCorrelation.overloadPercent}%)` : 'WIM Linked'}
                     </span>
                     <button
-                      onClick={() => onUpvoteReport && onUpvoteReport(rep.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onUpvoteReport) onUpvoteReport(rep.id);
+                      }}
                       className={`px-1.5 py-0.2 rounded font-mono font-bold text-[9px] transition-all ${
                         rep.userUpvoted
                           ? 'bg-cyan-500 text-slate-950 font-bold'
@@ -1489,6 +1504,22 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           </div>
         </div>
       )}
+
+      {/* Community Report Detail & Before/After Comparison Modal */}
+      <ReportDetailModal
+        isOpen={!!detailModalReport}
+        onClose={() => setDetailModalReport(null)}
+        report={detailModalReport}
+        onUpvote={onUpvoteReport}
+        onFocusMap={(rep) => {
+          const seg = roadSegments.find((s) => s.id === rep.segmentId);
+          if (seg) {
+            onSelectSegment(seg);
+          } else if (mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo(rep.coordinates, 10, { duration: 1.2 });
+          }
+        }}
+      />
     </div>
   );
 };

@@ -36,6 +36,14 @@ export const INITIAL_COMMUNITY_REPORTS: DamageReport[] = [
       correlatedOverloadTrucksCount: 184,
       estimatedPinnContributionPercent: 82,
       causeAnalysisSummary: 'Korelasi PINN & WIM: Kerusakan lubang 14 cm ini diakibatkan oleh akumulasi 184 perlintasan truk tronton ODOL berbeban sumbu >22 Ton (Overload +124%) dari Stasiun WIM KM 62 yang memicu pembentukan regangan tarik kritis (εt = 285 µε) pada bottom asphalt.'
+    },
+    repairDetails: {
+      afterPhotoUrl: 'https://images.unsplash.com/photo-1584467735871-8e85353a8413?auto=format&fit=crop&q=80&w=800',
+      repairDate: '13 Agustus 2026 (Penanganan Cepat PUPR)',
+      repairMethod: 'Penambalan Lubang Cepat Hot-Mix + Overlay Aspal AC-WC 8.5 cm & Pemadatan Tandem Roller',
+      repairedPciImprovement: 'PCI 28 → 92 (Kondisi Sangat Mantap)',
+      engineerNote: 'Telah dilakukan verifikasi lapangan dan penambalan darurat oleh Tim Reaksi Cepat BBPJN DKI-Jabar. Hasil analisis PINN pasca-overlay mengonfirmasi pengurangan regangan tarik sebesar 64%.',
+      agencyInCharge: 'Balai Besar Pelaksanaan Jalan Nasional (BBPJN DKI-Jabar)'
     }
   },
   {
@@ -73,6 +81,14 @@ export const INITIAL_COMMUNITY_REPORTS: DamageReport[] = [
       correlatedOverloadTrucksCount: 215,
       estimatedPinnContributionPercent: 88,
       causeAnalysisSummary: 'Korelasi PINN & WIM: Deformasi alur ini dipicu oleh tegangan geser berlebih dari konvoi truk CPO berbeban 24.6 Ton. FWD mengonfirmasi defleksi permukaan mencapai 680 µm, mengindikasikan kelelahan struktural subgrade.'
+    },
+    repairDetails: {
+      afterPhotoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=800',
+      repairDate: 'Jadwal: 15 Agustus 2026',
+      repairMethod: 'Cold Milling Deformasi Alur + Lapis Binder Course & Stabilization Subgrade Curing',
+      repairedPciImprovement: 'PCI 38 → 88 (Target Kondisi Mantap)',
+      engineerNote: 'Penindakan WIM di Stasiun Betung aktif, pengerukan alur jalan ambles dijadwalkan menggunakan alat berat Cold Milling Machine.',
+      agencyInCharge: 'BPTD Wilayah VIII & Dinas PU Provinsi Sumsel'
     }
   },
   {
@@ -110,6 +126,14 @@ export const INITIAL_COMMUNITY_REPORTS: DamageReport[] = [
       correlatedOverloadTrucksCount: 96,
       estimatedPinnContributionPercent: 68,
       causeAnalysisSummary: 'Korelasi PINN & WIM: Kombinasi elevasi tanjakan terjal, kebasahan akibat hujan (CBR turun ke 4.2%), serta beban truk bahan bangunan berbeban 15.2 Ton mempercepat pembentukan retak reteng fatigue.'
+    },
+    repairDetails: {
+      afterPhotoUrl: 'https://images.unsplash.com/photo-1584467735871-8e85353a8413?auto=format&fit=crop&q=80&w=800',
+      repairDate: 'Rencana: 18 Agustus 2026',
+      repairMethod: 'Crack Sealing Asphalt Emulsion + Lapis Penutup Micro-Surfacing',
+      repairedPciImprovement: 'PCI 58 → 85 (Target Penanganan Preventive)',
+      engineerNote: 'Survei awal Tim Dinas PUPR Jawa Barat telah mencatat lokasi retak fatigue di tanjakan Nagreg.',
+      agencyInCharge: 'Dinas Bina Marga & Penataan Ruang Provinsi Jawa Barat'
     }
   }
 ];
