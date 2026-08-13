@@ -28,6 +28,8 @@ interface NavbarProps {
   currentAccount: UserAccount;
   onOpenLoginModal: () => void;
   onOpenBinaMargaPipeline?: () => void;
+  onToggleCommunityReports?: () => void;
+  isCommunityReportOpen?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -39,7 +41,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenQuickSim,
   currentAccount,
   onOpenLoginModal,
-  onOpenBinaMargaPipeline
+  onOpenBinaMargaPipeline,
+  onToggleCommunityReports,
+  isCommunityReportOpen
 }) => {
   const shortRoleLabels: Record<UserRole, string> = {
     FIELD_ENGINEER: 'Field Civil Engineer',
@@ -234,16 +238,33 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             onClick={() => onSelectTab('DASHBOARD')}
-            className={`flex flex-col items-center py-1 px-2 ${
+            className={`flex flex-col items-center py-1 px-1.5 ${
               activeTab === 'DASHBOARD' ? 'text-indigo-400 font-bold' : 'text-slate-400'
             }`}
           >
             <BarChart3 className="w-4 h-4 mb-0.5" />
             <span>Dashboard</span>
           </button>
+
+          {/* Laporan Kerusakan (Masyarakat) Button - Disamping Dashboard untuk Pengguna Biasa */}
+          {isRegularUser && onToggleCommunityReports && (
+            <button
+              onClick={() => {
+                onSelectTab('MAP');
+                onToggleCommunityReports();
+              }}
+              className={`flex flex-col items-center py-1 px-1.5 transition-all ${
+                isCommunityReportOpen ? 'text-cyan-300 font-extrabold' : 'text-cyan-400 hover:text-white font-medium'
+              }`}
+            >
+              <Camera className="w-4 h-4 mb-0.5 text-cyan-400 animate-pulse" />
+              <span className="text-[10px]">Laporan</span>
+            </button>
+          )}
+
           <button
             onClick={() => onSelectTab('OPENVINO')}
-            className={`flex flex-col items-center py-1 px-2 ${
+            className={`flex flex-col items-center py-1 px-1.5 ${
               activeTab === 'OPENVINO' ? 'text-indigo-400 font-bold' : 'text-slate-400'
             }`}
           >

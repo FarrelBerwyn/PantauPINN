@@ -33,6 +33,8 @@ interface LeafletMapProps {
   onAddReport?: (newReport: DamageReport) => void;
   onUpvoteReport?: (reportId: string) => void;
   currentAccount?: UserAccount;
+  isCommunityReportCardOpen?: boolean;
+  onToggleCommunityReportCard?: () => void;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -45,7 +47,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   communityReports = [],
   onAddReport,
   onUpvoteReport,
-  currentAccount
+  currentAccount,
+  isCommunityReportCardOpen,
+  onToggleCommunityReportCard
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -60,14 +64,24 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [wimStatusFilter, setWimStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Mobile Card Collapse State
-  const [isMobileCardCollapsed, setIsMobileCardCollapsed] = useState<boolean>(false);
+  // Mobile Card Collapse State - Hidden by default on mobile screen format
+  const [isMobileCardCollapsed, setIsMobileCardCollapsed] = useState<boolean>(
+    typeof window !== 'undefined' ? window.innerWidth < 640 : true
+  );
+
+  // Sync mobile report card state when toggled from Navbar disamping Dashboard button
+  useEffect(() => {
+    if (isCommunityReportCardOpen !== undefined) {
+      setIsMobileCardCollapsed(!isCommunityReportCardOpen);
+    }
+  }, [isCommunityReportCardOpen]);
 
   // Report Detail Modal State
   const [detailModalReport, setDetailModalReport] = useState<DamageReport | null>(null);
 
-  // Report Modal Form State
+  // Report Modal Form State & Click-on-Map Custom Coordinates
   const [isReportFormOpen, setIsReportFormOpen] = useState<boolean>(false);
+  const [customCoordinates, setCustomCoordinates] = useState<[number, number] | null>(null);
   const [formSegmentId, setFormSegmentId] = useState<string>(roadSegments[0]?.id || '');
   const [formDamageType, setFormDamageType] = useState<DamageType>('POTHOLE');
   const [formSeverity, setFormSeverity] = useState<ReportSeverity>('SEVERE');
@@ -131,7 +145,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       segmentName: activeFormSegment.name,
       corridor: activeFormSegment.corridor,
       province: activeFormSegment.province,
-      coordinates: activeFormSegment.coordinates,
+      coordinates: customCoordinates || activeFormSegment.coordinates,
       damageType: formDamageType,
       damageTypeLabel: damageLabels[formDamageType],
       severity: formSeverity,
@@ -243,6 +257,29 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           maxZoom: 19
         }
       ).addTo(map);
+
+      // Map click event listener to pre-fill coordinates when clicking anywhere on the map
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        const clickedLat = parseFloat(e.latlng.lat.toFixed(6));
+        const clickedLng = parseFloat(e.latlng.lng.toFixed(6));
+
+        // Find nearest road segment
+        let nearestSegId = roadSegments[0]?.id || 'SEG-001';
+        let minDistance = Infinity;
+        roadSegments.forEach((seg) => {
+          const segLat = seg.coordinates[0];
+          const segLng = seg.coordinates[1];
+          const dist = Math.hypot(segLat - clickedLat, segLng - clickedLng);
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestSegId = seg.id;
+          }
+        });
+
+        setCustomCoordinates([clickedLat, clickedLng]);
+        setFormSegmentId(nearestSegId);
+        setIsReportFormOpen(true);
+      });
 
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
@@ -1373,6 +1410,22 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             </div>
 
             <form onSubmit={handleFormSubmit} className="space-y-4 text-xs">
+              {/* Selected GPS Coordinates Badge (Autofilled when clicking map) */}
+              <div className="bg-indigo-950/70 border border-cyan-500/40 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center space-x-2 text-cyan-300 font-mono font-bold">
+                  <MapPin className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>📍 Koordinat Titik Peta:</span>
+                  <span className="text-white bg-slate-950 px-2.5 py-0.5 rounded-lg border border-cyan-500/30">
+                    {customCoordinates
+                      ? `${customCoordinates[0]}, ${customCoordinates[1]}`
+                      : `${activeFormSegment.coordinates[0]}, ${activeFormSegment.coordinates[1]}`}
+                  </span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 shrink-0">
+                  ✓ Terisi Otomatis
+                </span>
+              </div>
+
               {/* Form Select Segment */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase">

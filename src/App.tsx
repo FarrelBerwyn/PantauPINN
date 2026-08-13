@@ -162,6 +162,12 @@ export default function App() {
     setActiveTab('SIMULATOR');
   };
 
+  const [isCommunityReportCardOpen, setIsCommunityReportCardOpen] = useState<boolean>(false);
+
+  const handleToggleCommunityReportCard = () => {
+    setIsCommunityReportCardOpen((prev) => !prev);
+  };
+
   return (
     <div className="h-screen h-[100dvh] w-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
       {/* Navbar Header */}
@@ -183,6 +189,8 @@ export default function App() {
         currentAccount={currentAccount}
         onOpenLoginModal={() => setIsOpenLoginModal(true)}
         onOpenBinaMargaPipeline={() => setIsOpenBinaMargaModal(true)}
+        onToggleCommunityReports={handleToggleCommunityReportCard}
+        isCommunityReportOpen={isCommunityReportCardOpen}
       />
 
       {/* Main View Area (Full Screen Base Map + Floating Glass Overlays) */}
@@ -199,6 +207,8 @@ export default function App() {
           onAddReport={handleAddCommunityReport}
           onUpvoteReport={handleUpvoteCommunityReport}
           currentAccount={currentAccount}
+          isCommunityReportCardOpen={isCommunityReportCardOpen}
+          onToggleCommunityReportCard={handleToggleCommunityReportCard}
         />
 
         {/* Floating Feature Panel Overlay (When DASHBOARD or SIMULATOR tab is active) */}
